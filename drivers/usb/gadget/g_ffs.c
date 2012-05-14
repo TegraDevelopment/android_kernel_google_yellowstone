@@ -71,8 +71,11 @@ struct gfs_ffs_obj {
 	struct ffs_data *ffs_data;
 };
 
+<<<<<<< HEAD
 USB_GADGET_COMPOSITE_OPTIONS();
 
+=======
+>>>>>>> 8bd4ac299aa... FunctionFS: enable multiple functions
 static struct usb_device_descriptor gfs_dev_desc = {
 	.bLength		= sizeof gfs_dev_desc,
 	.bDescriptorType	= USB_DT_DEVICE,
@@ -257,19 +260,32 @@ static int functionfs_ready_callback(struct ffs_data *ffs)
 	}
 	ffs_obj->desc_ready = true;
 	ffs_obj->ffs_data = ffs;
+<<<<<<< HEAD
 
 	if (--missing_funcs) {
 		ret = 0;
 		goto done;
 	}
 
+=======
+
+	if (--missing_funcs) {
+		ret = 0;
+		goto done;
+	}
+
+>>>>>>> 8bd4ac299aa... FunctionFS: enable multiple functions
 	if (gfs_registered) {
 		ret = -EBUSY;
 		goto done;
 	}
 	gfs_registered = true;
 
+<<<<<<< HEAD
 	ret = usb_composite_probe(&gfs_driver);
+=======
+	ret = usb_composite_probe(&gfs_driver, gfs_bind);
+>>>>>>> 8bd4ac299aa... FunctionFS: enable multiple functions
 	if (unlikely(ret < 0))
 		gfs_registered = false;
 
@@ -284,11 +300,19 @@ static void functionfs_closed_callback(struct ffs_data *ffs)
 
 	ENTER();
 	mutex_lock(&gfs_lock);
+<<<<<<< HEAD
 
 	ffs_obj = ffs->private_data;
 	if (!ffs_obj)
 		goto done;
 
+=======
+
+	ffs_obj = ffs->private_data;
+	if (!ffs_obj)
+		goto done;
+
+>>>>>>> 8bd4ac299aa... FunctionFS: enable multiple functions
 	ffs_obj->desc_ready = false;
 	missing_funcs++;
 
@@ -322,6 +346,7 @@ static void *functionfs_acquire_dev_callback(const char *dev_name)
 done:
 	mutex_unlock(&gfs_lock);
 	return ffs_dev;
+<<<<<<< HEAD
 }
 
 static void functionfs_release_dev_callback(struct ffs_data *ffs_data)
@@ -338,6 +363,24 @@ static void functionfs_release_dev_callback(struct ffs_data *ffs_data)
 	mutex_unlock(&gfs_lock);
 }
 
+=======
+}
+
+static void functionfs_release_dev_callback(struct ffs_data *ffs_data)
+{
+	struct gfs_ffs_obj *ffs_dev;
+
+	ENTER();
+	mutex_lock(&gfs_lock);
+
+	ffs_dev = ffs_data->private_data;
+	if (ffs_dev)
+		ffs_dev->mounted = false;
+
+	mutex_unlock(&gfs_lock);
+}
+
+>>>>>>> 8bd4ac299aa... FunctionFS: enable multiple functions
 /*
  * It is assumed that gfs_bind is called from a context where gfs_lock is held
  */
@@ -355,15 +398,23 @@ static int gfs_bind(struct usb_composite_dev *cdev)
 	if (IS_ERR(the_dev)) {
 		ret = PTR_ERR(the_dev);
 		goto error_quick;
+<<<<<<< HEAD
 	}
+=======
+>>>>>>> 8bd4ac299aa... FunctionFS: enable multiple functions
 	gfs_ether_setup = true;
 
 	ret = usb_string_ids_tab(cdev, gfs_strings);
 	if (unlikely(ret < 0))
 		goto error;
+<<<<<<< HEAD
 	gfs_dev_desc.iProduct = gfs_strings[USB_GADGET_PRODUCT_IDX].id;
 
 	for (i = func_num; i--; ) {
+=======
+
+	for (i = func_num; --i; ) {
+>>>>>>> 8bd4ac299aa... FunctionFS: enable multiple functions
 		ret = functionfs_bind(ffs_tab[i].ffs_data, cdev);
 		if (unlikely(ret < 0)) {
 			while (++i < func_num)
@@ -416,10 +467,17 @@ static int gfs_unbind(struct usb_composite_dev *cdev)
 	 * do...?
 	 */
 	if (gfs_ether_setup)
+<<<<<<< HEAD
 		gether_cleanup(the_dev);
 	gfs_ether_setup = false;
 
 	for (i = func_num; i--; )
+=======
+		gether_cleanup();
+	gfs_ether_setup = false;
+
+	for (i = func_num; --i; )
+>>>>>>> 8bd4ac299aa... FunctionFS: enable multiple functions
 		if (ffs_tab[i].ffs_data)
 			functionfs_unbind(ffs_tab[i].ffs_data);
 

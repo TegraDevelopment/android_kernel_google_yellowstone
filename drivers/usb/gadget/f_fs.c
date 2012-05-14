@@ -1049,7 +1049,12 @@ struct ffs_sb_fill_data {
 	struct ffs_file_perms perms;
 	umode_t root_mode;
 	const char *dev_name;
-	struct ffs_data *ffs_data;
+	union {
+		/* set by ffs_fs_mount(), read by ffs_sb_fill() */
+		void *private_data;
+		/* set by ffs_sb_fill(), read by ffs_fs_mount */
+		struct ffs_data *ffs_data;
+	};
 };
 
 static int ffs_sb_fill(struct super_block *sb, void *_data, int silent)
@@ -1061,7 +1066,15 @@ static int ffs_sb_fill(struct super_block *sb, void *_data, int silent)
 	ENTER();
 
 	ffs->sb              = sb;
-	data->ffs_data       = NULL;
+	ffs->dev_name        = kstrdup(data->dev_name, GFP_KERNEL);
+	if (unlikely(!ffs->dev_name))
+		goto Enomem;
+	ffs->file_perms      = data->perms;
+	ffs->private_data    = data->private_data;
+
+	/* used by the caller of this function */
+	data->ffs_data       = ffs;
+
 	sb->s_fs_info        = ffs;
 	sb->s_blocksize      = PAGE_CACHE_SIZE;
 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
@@ -1187,7 +1200,6 @@ ffs_fs_mount(struct file_system_type *t, int flags,
 	struct dentry *rv;
 	int ret;
 	void *ffs_dev;
-	struct ffs_data	*ffs;
 
 	ENTER();
 
@@ -1195,30 +1207,18 @@ ffs_fs_mount(struct file_system_type *t, int flags,
 	if (unlikely(ret < 0))
 		return ERR_PTR(ret);
 
-	ffs = ffs_data_new();
-	if (unlikely(!ffs))
-		return ERR_PTR(-ENOMEM);
-	ffs->file_perms = data.perms;
-
-	ffs->dev_name = kstrdup(dev_name, GFP_KERNEL);
-	if (unlikely(!ffs->dev_name)) {
-		ffs_data_put(ffs);
-		return ERR_PTR(-ENOMEM);
-	}
-
 	ffs_dev = functionfs_acquire_dev_callback(dev_name);
-	if (IS_ERR(ffs_dev)) {
-		ffs_data_put(ffs);
-		return ERR_CAST(ffs_dev);
-	}
-	ffs->private_data = ffs_dev;
-	data.ffs_data = ffs;
+	if (IS_ERR(ffs_dev))
+		return ffs_dev;
 
+	data.dev_name = dev_name;
+	data.private_data = ffs_dev;
 	rv = mount_nodev(t, flags, &data, ffs_sb_fill);
-	if (IS_ERR(rv) && data.ffs_data) {
+
+	/* data.ffs_data is set by ffs_sb_fill */
+	if (IS_ERR(rv))
 		functionfs_release_dev_callback(data.ffs_data);
-		ffs_data_put(data.ffs_data);
-	}
+
 	return rv;
 }
 
