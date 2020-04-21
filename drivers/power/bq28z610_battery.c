@@ -29,7 +29,7 @@
 #include <linux/ina3221.h>
 
 
-#define BQ28Z610_DELAY		(30*HZ)
+#define BQ28Z610_DELAY		msecs_to_jiffies(30000)
 
 #define BQ28Z610_VERSION_NO	0x11
 #define BQ28Z610_CONTROL_STATUS		0x0000
@@ -799,7 +799,7 @@ static int bq28z610_update_battery_status(struct battery_gauge_dev *bg_dev,
 	case BATTERY_CHARGING:
 		/* fuel gauge can more then 1 sec to show status */
 		cancel_delayed_work(&chip->power_work);
-		schedule_delayed_work(&chip->power_work, 2*HZ);
+		schedule_delayed_work(&chip->power_work, msecs_to_jiffies(2000));
 		break;
 	case BATTERY_CHARGING_DONE:
 		chip->status = POWER_SUPPLY_STATUS_FULL;
@@ -917,7 +917,7 @@ static int bq28z610_probe(struct i2c_client *client,
 
 #ifdef BQ28Z610_DEBUG
 	INIT_DEFERRABLE_WORK(&chip->work, bq28z610_work);
-	schedule_delayed_work(&chip->work, 2*HZ);
+	schedule_delayed_work(&chip->work, msecs_to_jiffies(2000));
 #endif
 	device_set_wakeup_capable(&client->dev, 1);
 	pr_info("%s: probe DONE\n", __func__);

@@ -157,7 +157,7 @@ static int bq2477x_plug_in_charging_enable(struct bq2477x_chip *bq2477x,
 static int bq2477x_stop_charging(struct bq2477x_chip *bq2477x);
 
 #define CHARGER_DETECTION_DEFAULT_DEBOUNCE_TIME_MS		50
-#define BATTERY_CHECK_TIME					(30*HZ)
+#define BATTERY_CHECK_TIME					msecs_to_jiffies(30000)
 
 static void bq2477x_usb_work(struct work_struct *w)
 {
@@ -1171,7 +1171,7 @@ static int bq2477x_probe(struct i2c_client *client,
 			ret = 0;
 		}
 	}
-	schedule_delayed_work(&bq2477x->battery_work, 35*HZ);
+	schedule_delayed_work(&bq2477x->battery_work, msecs_to_jiffies(35000));
 	dev_info(bq2477x->dev, "%s: success\n", __func__);
 	return ret;
 
